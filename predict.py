@@ -1107,13 +1107,13 @@ class TextModel(nn.Module):
 
         return self.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
 
-    def answer_question(self, image_embeds, question, **kwargs):
+    def answer_question(self, image_embeds, question, max_new_tokens, **kwargs):
         prompt = f"<image>\n\nQuestion: {question}\n\nAnswer:"
         answer = self.generate(
             image_embeds,
             prompt,
             eos_text="<END>",
-            max_new_tokens=128,
+            max_new_tokens=max_new_tokens,
             **kwargs,
         )[0]
         return re.sub("<$", "", re.sub("END$", "", answer)).strip()
@@ -1130,11 +1130,12 @@ class Predictor(BasePredictor):
         self,
         image: Path = Input(description="Grayscale input image"),
         prompt: str = Input(description="Prompt to use for generation", default=None),
+        max_new_tokens: int = Input(description="Max new tokens in answer", default=128),
     ) -> ConcatenateIterator[str]:
         """Run a single prediction on the model"""
         image = Image.open(image).convert("RGB")
         image_embeds = self.vision_encoder(image)
         
         question = prompt
-        for output in self.text_model.answer_question(image_embeds, question):
+        for output in self.text_model.answer_question(image_embeds, question, max_new_tokens):
             yield output
