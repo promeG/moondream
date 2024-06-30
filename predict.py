@@ -1137,5 +1137,7 @@ class Predictor(BasePredictor):
         image_embeds = self.vision_encoder(image)
         
         question = prompt
+        result = ''
         for output in self.text_model.answer_question(image_embeds, question, max_new_tokens):
-            yield output
+            result = result + output
+        return result
